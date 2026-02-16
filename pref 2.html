@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>都道府県記録</title>
+
+<h2>おもいで</h2>
+<textarea id="noteArea" rows="5" cols="40" placeholder="日付などを記録しよう！"></textarea>
+<br>
+<button onclick="saveNote()">記憶する</button>
+
+<style>
+body {
+  text-align: center;
+  font-family: sans-serif;
+  background-color: #fff7f7;
+}
+
+img {
+  width: 100px;
+  margin: 10px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.header-img {
+  width: 90%;
+  max-width: 400px;
+  margin: 20px auto;
+  border-radius: 15px;
+  display: block;
+}
+
+button {
+  padding: 10px 20px;
+  font-size: 16px;
+  border-radius: 10px;
+  border: none;
+  background-color: #4CAF50;
+  color: white;
+}
+</style>
+</head>
+
+<body>
+
+<h1 id="title"></h1>
+
+<img id="headerImage" class="header-img" style="display:none;">
+
+<br>
+<input type="file" id="photoInput" multiple>
+
+<div id="photoArea"></div>
+
+<br>
+<button onclick="goBack()">戻る</button>
+
+<script>
+
+let pref = localStorage.getItem("selectedPref");
+document.getElementById("title").textContent = pref;
+
+let travelData = JSON.parse(localStorage.getItem("travelData")) || {};
+
+if (!travelData[pref]) {
+  travelData[pref] = { photos: [], header: null };
+}
+
+function saveData() {
+  localStorage.setItem("travelData", JSON.stringify(travelData));
+}
+
+document.getElementById("photoInput").addEventListener("change", function(e) {
+  const files = e.target.files;
+
+  for (let file of files) {
+    const reader = new FileReader();
+    reader.onload = function(event) {
+      travelData[pref].photos.push(event.target.result);
+      saveData();
+      renderPhotos();
+    };
+    reader.readAsDataURL(file);
+  }
+});
+
+function renderPhotos() {
+  const area = document.getElementById("photoArea");
+  area.innerHTML = "";
+
+  travelData[pref].photos.forEach((photo, index) => {
+
+    const img = document.createElement("img");
+    img.src = photo;
+
+    img.onclick = function() {
+      travelData[pref].header = photo;
+      saveData();
+      renderHeader();
+      alert("ヘッダーに設定しました");
+    };
+
+    img.oncontextmenu = function(e) {
+      e.preventDefault();
+      if (confirm("この写真を削除しますか？")) {
+        travelData[pref].photos.splice(index, 1);
+
+          if (travelData[pref].header === photo) {
+          travelData[pref].header = null;
+        }
+
+        saveData();
+        renderPhotos();
+        renderHeader();
+      }
+    };
+
+    area.appendChild(img);
+  });
+
+  renderHeader();
+}
+
+function renderHeader() {
+  const headerImg = document.getElementById("headerImage");
+
+  if (travelData[pref].header && travelData[pref].photos.includes(travelData[pref].header)) {
+    headerImg.src = travelData[pref].header;
+    headerImg.style.display = "block";
+  } else {
+    travelData[pref].header = null;
+    headerImg.style.display = "none";
+  }
+}
+
+function goBack() {
+  window.location.href = "kiroku.html";
+}
+
+renderPhotos();
+renderHeader();
+
+const noteArea = document.getElementById("noteArea");
+if (travelData[pref] && travelData[pref].note) {
+    noteArea.value = travelData[pref].note;
+}
+
+function saveNote() {
+    travelData[pref].note = noteArea.value;
+    saveData();
+    alert("次の旅行も楽しもう！");
+}
+
+</script>
+
+</body>
+</html>
